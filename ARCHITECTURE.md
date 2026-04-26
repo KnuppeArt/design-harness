@@ -43,10 +43,10 @@ INPUT: project-brief.md (+ optional: prd.md, ux-spec.md, trd.md, domain-rules.md
 │                                                                 │
 │  /wireframe    ──→ wireframe.json + wireframe.pen ──[approval]──→ │
 │  /design-view  ──→ views.pen ──[approval]──────────────────→   │
-│  /spec-view    ──→ VIEWS.md                                     │
+│  /spec-view    ──→ views.json                                   │
 └─────────────────────────────────────────────────────────────────┘
 
-OUTPUT: DESIGN.md + components.json + VIEWS.md
+OUTPUT: DESIGN.md + components.json + views.json
         → coding agent implements
 ```
 
@@ -94,7 +94,7 @@ OUTPUT: DESIGN.md + components.json + VIEWS.md
 | `design-system-reader` | Shared with @ui-architect |
 | `wireframer` | Reads brief + components.json → wireframe.json + .pen |
 | `view-composer` | Composes components into layouts with spacing/grids |
-| `view-specifier` | Generates complete VIEWS.md from approved views |
+| `view-specifier` | Generates complete views.json from approved views |
 
 **External skills:**
 - `frontend-design` (Anthropic) — Shared with @ui-architect
@@ -104,7 +104,7 @@ OUTPUT: DESIGN.md + components.json + VIEWS.md
 |---------|----------|
 | `/wireframe` | No arg: from prd.md + components.json / `--from-image`: from wireframe image / `--from-pen`: import existing .pen |
 | `/design-view` | No arg = all views / arg = specific view |
-| `/spec-view` | Generates VIEWS.md from approved views |
+| `/spec-view` | Generates views.json from approved views |
 
 ---
 
@@ -132,7 +132,7 @@ Skills use progressive disclosure — they load only when explicitly needed by a
 
 ### DESIGN.md
 
-Google DESIGN.md format extended with Brad Frost Subatomic 3-tier token architecture.
+Google DESIGN.md format extended with Brad Frost Subatomic 3-tier token architecture. Stays `.md` — it's an open Google standard with its own CLI tooling (lint, diff, export).
 
 ```yaml
 primitive:           # Tier 1: Raw values. Never used directly.
@@ -147,6 +147,8 @@ components:          # Tier 3: Component-specific overrides.
 ```
 
 ### components.json
+
+Machine-readable, schema-validated component registry. One file, all components, single validation point.
 
 ```json
 {
@@ -166,16 +168,44 @@ components:          # Tier 3: Component-specific overrides.
 }
 ```
 
-### VIEWS.md
+### views.json
 
-Complete layout specification. No ambiguity. Every view documents:
+Machine-readable, schema-validated view layout registry. No ambiguity — every view documents:
+
 - All sections in explicit order (top to bottom)
-- Which component goes in each section (ref by name to components.json)
+- Which component goes in each section (ref by name to `components.json`)
 - Grid spec: columns, gap, container max-width
-- Position of each component: alignment, width, height
+- Position of each component: alignment, width, height, placement type
 - Spacing between sections and components
 - Responsive breakpoints: what changes at mobile/tablet/desktop
-- Behavior: scroll, sticky, fixed elements
+- Behavior: scroll, sticky, fixed elements, background, safe areas
+- Interactions: what happens on tap/swipe/gesture
+
+```json
+{
+  "$schema": "https://design-harness.dev/schemas/views-registry.v1.json",
+  "version": "0.1.0",
+  "project": "ProjectName",
+  "components_registry_version": "0.1.0",
+  "views": {
+    "HomeScreen": {
+      "id": "HomeScreen",
+      "title": "Home",
+      "type": "screen",
+      "navigation": { "entry_points": ["tab-bar-home"] },
+      "behavior": { "scroll": "vertical", "background": "sky-dynamic" },
+      "sections": [
+        {
+          "id": "tab-bar",
+          "component": "TabBar",
+          "position": { "placement": "fixed", "anchor": "bottom-safe-area" },
+          "dimensions": { "width": "full", "height": "auto" }
+        }
+      ]
+    }
+  }
+}
+```
 
 ---
 
@@ -183,18 +213,20 @@ Complete layout specification. No ambiguity. Every view documents:
 
 | ID | Decision | Rationale |
 |----|----------|-----------|
-| DA-01 | 2 agents, not 1 | Architect (design system + components) and Composer (views) have fundamentally different context needs. One agent with both contexts would be bloated and confused. |
-| DA-02 | `components.json` is the only SSOT for components | Single file = single validation point. COMPONENTS.md eliminated as maintained artifact. |
+| DA-01 | 2 agents, not 1 | Architect (design system + components) and Composer (views) have fundamentally different context needs. |
+| DA-02 | `components.json` is the only SSOT for components | Single file = single validation point. |
 | DA-03 | Atomic layering is enforced | Molecules cannot be designed until atoms are approved. Prevents inconsistency cascades. |
-| DA-04 | Human approval gates at every layer | Pipeline is collaborative, not autonomous. Spec quality requires human judgment. |
-| DA-05 | Stack-agnostic output | SSOT is framework-independent. Coding agents translate to target stack. |
-| DA-06 | `project-context-resolver` not hardcoded filenames | Pipeline works with 2 docs (brief+PRD) or 6 docs (brief+PRD+UX+TRD+domain+content). Agents discover what's available. |
-| DA-07 | Skills over large agent files | Progressive disclosure. Each skill loads when needed. Agent files stay lean. |
-| DA-08 | Google DESIGN.md format as base | Open-sourced April 2026. CLI tooling (lint, diff, export) included. |
-| DA-09 | Brad Frost Subatomic 3-tier tokens | Cleanest separation: primitives → semantic → component. Prevents token coupling. |
-| DA-10 | Pencil.dev as primary visual tool | Free early access. .pen = JSON (inspectable). Native MCP. Swarm mode for parallel design. |
-| DA-11 | `/decompose` for brownfield | Handles real-world case where design already exists in code or images. |
-| DA-12 | Pipeline is platform-agnostic | Removing stack-specific questions from `/init-design`. SSOT is universal. |
+| DA-04 | Human approval gates at every layer | Pipeline is collaborative, not autonomous. |
+| DA-05 | Stack-agnostic output | SSOT is framework-independent. |
+| DA-06 | `project-context-resolver` not hardcoded filenames | Pipeline works with 2–6 input docs. Agents discover what's available. |
+| DA-07 | Skills over large agent files | Progressive disclosure. Each skill loads when needed. |
+| DA-08 | Google DESIGN.md format as base | CLI tooling (lint, diff, export) included. |
+| DA-09 | Brad Frost Subatomic 3-tier tokens | Cleanest separation: primitives → semantic → component. |
+| DA-10 | Pencil.dev as primary visual tool | Free. `.pen` = JSON (inspectable). Native MCP. |
+| DA-11 | `/decompose` for brownfield | Handles existing UI in code or images. |
+| DA-12 | Pipeline is platform-agnostic | SSOT is universal. No stack-specific questions in `/init-design`. |
+| DA-14 | `components.json` replaces `COMPONENTS.md` | Structured + validable beats human-readable for agent consumption. |
+| DA-18 | `views.json` replaces `VIEWS.md` | Same logic as DA-14. `DESIGN.md` stays `.md` — it's a Google open standard. |
 
 ---
 
@@ -229,7 +261,7 @@ your-project/
       init-design.md
   schemas/
     components-registry.v1.schema.json
-    view-spec.v1.schema.json
+    views-registry.v1.schema.json
   docs/
     brief.md
     prd.md           ← Required for /plan-components
@@ -237,7 +269,7 @@ your-project/
     domain-rules.md  ← Optional. Domain-specific logic.
   DESIGN.md          ← Generated by /gen-design-system
   components.json    ← Built up by /spec-component
-  VIEWS.md           ← Generated by /spec-view
+  views.json         ← Generated by /spec-view
   CLAUDE.md          ← Project-level rules for Design Harness
 ```
 
