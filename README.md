@@ -12,8 +12,9 @@ Design Harness produces a complete, agent-consumable SSOT from a project brief �
 
 ```
 DESIGN.md          ← Design tokens (3-tier: primitive → semantic → component)
+                     Google DESIGN.md format. Stays .md — it's an open standard.
 components.json    ← Component registry with full anatomy + behavior specs
-VIEWS.md           ← View layouts with explicit positions, spacing, breakpoints
+views.json         ← View layouts with explicit positions, spacing, breakpoints
 ```
 
 Any coding agent (Claude Code, Codex, Cursor, Gemini CLI) consumes these three files and implements the UI. Zero interpretation required.
@@ -34,9 +35,9 @@ Any coding agent (Claude Code, Codex, Cursor, Gemini CLI) consumes these three f
 @ui-composer
   /wireframe          → skeleton layout (wireframe.json + .pen)
   /design-view        → detailed view composition in Pencil
-  /spec-view          → generates VIEWS.md (absolutely complete)
+  /spec-view          → generates views.json (absolutely complete)
 
-OUTPUT: DESIGN.md + components.json + VIEWS.md
+OUTPUT: DESIGN.md + components.json + views.json
 ```
 
 Human approval gates after each layer. Nothing advances without sign-off.
@@ -48,7 +49,7 @@ Human approval gates after each layer. Nothing advances without sign-off.
 | Agent | Role | Output |
 |-------|------|--------|
 | `@ui-architect` | Design system + component specs | `DESIGN.md`, `components.json` |
-| `@ui-composer` | View composition + layout specs | `VIEWS.md` |
+| `@ui-composer` | View composition + layout specs | `views.json` |
 
 ---
 
@@ -68,7 +69,7 @@ Human approval gates after each layer. Nothing advances without sign-off.
     brownfield-decomposer/     ← Decomposes existing UI into atoms/molecules/organisms
     wireframer/                ← Maps components to views (wireframe.json + .pen)
     view-composer/             ← Composes components into detailed layouts
-    view-specifier/            ← Generates complete VIEWS.md
+    view-specifier/            ← Generates complete views.json
     design-qa/                 ← Visual QA skill for coding agents (consumer-side)
   commands/
     gen-design-system.md
@@ -82,6 +83,7 @@ Human approval gates after each layer. Nothing advances without sign-off.
     init-design.md             ← Bootstrap a new project
 schemas/
   components-registry.v1.schema.json
+  views-registry.v1.schema.json
 ```
 
 ---
@@ -127,7 +129,7 @@ cp -r ~/.claude/design-harness/schemas /your-project/
 # [Review and approve]
 @ui-composer /design-view           # → detailed layouts
 # [Review and approve]
-@ui-composer /spec-view             # → VIEWS.md
+@ui-composer /spec-view             # → views.json
 ```
 
 ---
@@ -136,13 +138,15 @@ cp -r ~/.claude/design-harness/schemas /your-project/
 
 **1. SSOT over code** — The three output files are the source of truth. Code is a generated artifact.
 
-**2. Atomic layering** — Components are designed and approved in strict order: atoms first, then molecules (which use approved atoms), then organisms. No skipping layers.
+**2. Structured over markdown** — `components.json` and `views.json` are machine-readable, schema-validated, diff-friendly. `DESIGN.md` stays `.md` because it's a Google open standard with its own CLI tooling.
 
-**3. Approval gates** — Nothing advances without human sign-off. The pipeline is designed for collaboration, not automation.
+**3. Atomic layering** — Components are designed and approved in strict order: atoms first, then molecules (which use approved atoms), then organisms. No skipping layers.
 
-**4. Stack-agnostic** — The SSOT works for Flutter, React Native, Swift UI, React Web, or anything else. Coding agents translate.
+**4. Approval gates** — Nothing advances without human sign-off. The pipeline is designed for collaboration, not automation.
 
-**5. Progressive disclosure** — Skills load on demand. Agents only receive context relevant to their current task.
+**5. Stack-agnostic** — The SSOT works for Flutter, React Native, Swift UI, React Web, or anything else. Coding agents translate.
+
+**6. Progressive disclosure** — Skills load on demand. Agents only receive context relevant to their current task.
 
 ---
 
@@ -174,16 +178,52 @@ Design Harness uses Brad Frost's Subatomic 3-tier token system:
   "components": {
     "Button": {
       "level": "atom",
-      "anatomy": { ... },
-      "variants": { ... },
-      "states": { ... },
-      "tokens": { ... }
+      "anatomy": { },
+      "variants": { },
+      "states": { },
+      "tokens": { }
     }
   }
 }
 ```
 
-One file. All specs. Single validation point.
+## `views.json` format
+
+```json
+{
+  "$schema": "https://design-harness.dev/schemas/views-registry.v1.json",
+  "version": "0.1.0",
+  "project": "YourProject",
+  "components_registry_version": "0.1.0",
+  "views": {
+    "HomeScreen": {
+      "id": "HomeScreen",
+      "title": "Home",
+      "type": "screen",
+      "navigation": { "entry_points": ["tab-bar-home"] },
+      "sections": [
+        {
+          "id": "nav-bar",
+          "component": "NavBar",
+          "position": { "placement": "fixed", "anchor": "top-safe-area" },
+          "dimensions": { "width": "full", "height": "56px" }
+        }
+      ]
+    }
+  }
+}
+```
+
+One file. All view specs. Single validation point.
+
+---
+
+## Design decisions
+
+| ID | Decision |
+|----|----------|
+| DA-14 | `components.json` replaces `COMPONENTS.md` — structured + validable wins |
+| DA-18 | `views.json` replaces `VIEWS.md` — same logic. `DESIGN.md` stays `.md` (Google standard) |
 
 ---
 
