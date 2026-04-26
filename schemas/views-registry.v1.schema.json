@@ -1,0 +1,316 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://design-harness.dev/schemas/views-registry.v1.json",
+  "title": "Design Harness — Views Registry v1",
+  "description": "SSOT schema for view layout specifications. Produced by @ui-composer /spec-view. Consumed by coding agents to implement pixel-perfect layouts.",
+  "type": "object",
+  "required": ["$schema", "version", "project", "views"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema reference. Always 'https://design-harness.dev/schemas/views-registry.v1.json'."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this views registry file. Start at '0.1.0'.",
+      "examples": ["0.1.0", "1.0.0"]
+    },
+    "project": {
+      "type": "string",
+      "description": "Name of the project this registry belongs to.",
+      "examples": ["Kairos", "MyApp"]
+    },
+    "components_registry_version": {
+      "type": "string",
+      "description": "Version of components.json this views registry was built against. Ensures view specs reference valid components.",
+      "examples": ["0.1.0"]
+    },
+    "views": {
+      "type": "object",
+      "description": "Map of view name → view specification. Keys are PascalCase view identifiers.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/ViewSpec"
+      },
+      "examples": [
+        {
+          "HomeScreen": {},
+          "CircularCalendarView": {},
+          "MonthExplorer": {}
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ViewSpec": {
+      "type": "object",
+      "required": ["id", "title", "type", "navigation", "sections"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this view. PascalCase. Matches the key in 'views'.",
+          "examples": ["HomeScreen", "CircularCalendarView"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable title of this view.",
+          "examples": ["Home", "Circular Calendar"]
+        },
+        "type": {
+          "type": "string",
+          "enum": ["screen", "modal", "sheet", "overlay", "tab"],
+          "description": "Presentation type of this view."
+        },
+        "navigation": {
+          "type": "object",
+          "description": "How users reach this view.",
+          "required": ["entry_points"],
+          "additionalProperties": false,
+          "properties": {
+            "entry_points": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of navigation entry points. Use view IDs or descriptive strings.",
+              "examples": [["tab-bar-home"], ["tab-bar-circular"], ["HomeScreen → tap-day"]]
+            },
+            "transition": {
+              "type": "string",
+              "description": "Transition animation when entering this view.",
+              "examples": ["slide-left", "fade", "slide-up", "none"]
+            }
+          }
+        },
+        "grid": {
+          "type": "object",
+          "description": "Top-level grid/layout system for this view.",
+          "additionalProperties": false,
+          "properties": {
+            "columns": {
+              "type": "integer",
+              "description": "Number of grid columns.",
+              "examples": [4, 12]
+            },
+            "gutter": {
+              "type": "string",
+              "description": "Gutter between columns.",
+              "examples": ["16px", "spacing.4"]
+            },
+            "margin": {
+              "type": "string",
+              "description": "Horizontal margin from screen edge.",
+              "examples": ["16px", "spacing.4"]
+            },
+            "max_width": {
+              "type": "string",
+              "description": "Maximum content width. Use 'none' for full-bleed.",
+              "examples": ["428px", "none"]
+            }
+          }
+        },
+        "sections": {
+          "type": "array",
+          "description": "Ordered list of sections from top to bottom. Every section is explicit — no ambiguity for coding agents.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/SectionSpec"
+          }
+        },
+        "behavior": {
+          "type": "object",
+          "description": "View-level behavior (scroll, safe areas, background).",
+          "additionalProperties": false,
+          "properties": {
+            "scroll": {
+              "type": "string",
+              "enum": ["none", "vertical", "horizontal", "both"],
+              "description": "Scroll direction for this view."
+            },
+            "background": {
+              "type": "string",
+              "description": "Background of the view. References DESIGN.md semantic tokens.",
+              "examples": ["colors.surface.primary", "sky-dynamic", "colors.background.default"]
+            },
+            "safe_area": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "top": { "type": "boolean" },
+                "bottom": { "type": "boolean" }
+              }
+            },
+            "status_bar": {
+              "type": "string",
+              "enum": ["light", "dark", "auto"],
+              "description": "Status bar style."
+            }
+          }
+        },
+        "breakpoints": {
+          "type": "object",
+          "description": "Responsive overrides per breakpoint. Only specify what changes.",
+          "additionalProperties": false,
+          "properties": {
+            "mobile": { "$ref": "#/definitions/BreakpointOverride" },
+            "tablet": { "$ref": "#/definitions/BreakpointOverride" },
+            "desktop": { "$ref": "#/definitions/BreakpointOverride" }
+          }
+        }
+      }
+    },
+    "SectionSpec": {
+      "type": "object",
+      "required": ["id", "component"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this section within the view. kebab-case.",
+          "examples": ["nav-bar", "hero-date", "feast-banner", "tab-bar"]
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for this section. For documentation and design review.",
+          "examples": ["Navigation Bar", "Hero Date Widget", "Bottom Tab Bar"]
+        },
+        "component": {
+          "type": "string",
+          "description": "Component name. Must match a key in components.json.",
+          "examples": ["NavBar", "HeroDateWidget", "TabBar", "FeastBanner"]
+        },
+        "variant": {
+          "type": "string",
+          "description": "Which variant of the component to use. Must match a key in the component's 'variants' in components.json.",
+          "examples": ["default", "compact", "expanded"]
+        },
+        "state": {
+          "type": "string",
+          "description": "Initial state of the component in this view context.",
+          "examples": ["default", "loading", "empty", "feast-active"]
+        },
+        "conditional": {
+          "type": "object",
+          "description": "Render condition. Section only renders if condition is true.",
+          "additionalProperties": false,
+          "properties": {
+            "show_when": {
+              "type": "string",
+              "description": "Condition expression. Plain language is fine — coding agents interpret.",
+              "examples": [
+                "feast is active",
+                "omer count is running",
+                "user.settings.showGregorian === true"
+              ]
+            }
+          }
+        },
+        "position": {
+          "type": "object",
+          "description": "Layout position of this section.",
+          "additionalProperties": false,
+          "properties": {
+            "placement": {
+              "type": "string",
+              "enum": ["flow", "fixed", "sticky", "absolute", "floating"],
+              "description": "How this section is positioned in the layout."
+            },
+            "alignment": {
+              "type": "string",
+              "enum": ["left", "center", "right", "full-width", "full-bleed"],
+              "description": "Horizontal alignment."
+            },
+            "anchor": {
+              "type": "string",
+              "description": "For fixed/absolute/floating: which edge or point to anchor to.",
+              "examples": ["top-safe-area", "bottom-safe-area", "center"]
+            }
+          }
+        },
+        "dimensions": {
+          "type": "object",
+          "description": "Size of this section.",
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "type": "string",
+              "description": "Width. Use 'full' for 100% of container.",
+              "examples": ["full", "240px", "50%"]
+            },
+            "height": {
+              "type": "string",
+              "description": "Height. Use 'auto' for content-driven height.",
+              "examples": ["auto", "56px", "320px", "40vh"]
+            },
+            "min_height": { "type": "string" },
+            "max_height": { "type": "string" }
+          }
+        },
+        "spacing": {
+          "type": "object",
+          "description": "Spacing around this section.",
+          "additionalProperties": false,
+          "properties": {
+            "margin_top": {
+              "type": "string",
+              "description": "Space above this section. References DESIGN.md spacing tokens.",
+              "examples": ["0", "spacing.4", "24px"]
+            },
+            "margin_bottom": { "type": "string" },
+            "padding_horizontal": { "type": "string" },
+            "padding_vertical": { "type": "string" }
+          }
+        },
+        "props": {
+          "type": "object",
+          "description": "Props passed to the component in this view context. Keys match component prop names.",
+          "additionalProperties": true
+        },
+        "interactions": {
+          "type": "array",
+          "description": "User interactions handled by this section.",
+          "items": {
+            "type": "object",
+            "required": ["trigger", "action"],
+            "additionalProperties": false,
+            "properties": {
+              "trigger": {
+                "type": "string",
+                "examples": ["tap", "long-press", "swipe-up", "swipe-down", "rotate"]
+              },
+              "action": {
+                "type": "string",
+                "description": "What happens. Use view IDs for navigation, plain language for behavior.",
+                "examples": ["navigate:DayDetail", "expand:month-explorer", "toggle:gregorian-visibility"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "BreakpointOverride": {
+      "type": "object",
+      "description": "Partial override for a specific breakpoint. Only specify what changes from the base spec.",
+      "additionalProperties": false,
+      "properties": {
+        "grid": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "sections": {
+          "type": "array",
+          "description": "Section overrides at this breakpoint. Only include sections that change.",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
