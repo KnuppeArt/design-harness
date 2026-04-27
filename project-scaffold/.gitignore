@@ -1,0 +1,17 @@
+# Pencil cache and temp files
+.pencil-cache/
+*.pen.bak
+*.pen.tmp
+
+# Design Harness generated artifacts (not source)
+wireframe.json
+wireframe.pen
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
