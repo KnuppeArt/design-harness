@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://design-harness.dev/schemas/components-registry.v1.json",
+  "title": "Design Harness — Components Registry v1",
+  "description": "SSOT schema for component specifications. Produced by @ui-architect /spec-component. Consumed by coding agents and @ui-composer.",
+  "type": "object",
+  "required": ["$schema", "version", "project", "components"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema reference. Always 'https://design-harness.dev/schemas/components-registry.v1.json'."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version. Start at '0.1.0'.",
+      "examples": ["0.1.0", "1.0.0"]
+    },
+    "project": {
+      "type": "string",
+      "description": "Name of the project.",
+      "examples": ["Kairos", "MyApp"]
+    },
+    "components": {
+      "type": "object",
+      "description": "Map of ComponentName → ComponentSpec. Keys are PascalCase.",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/definitions/ComponentSpec" }
+    }
+  },
+  "definitions": {
+    "ComponentSpec": {
+      "type": "object",
+      "required": ["level", "description", "anatomy"],
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["atom", "molecule", "organism", "template"],
+          "description": "Atomic design level."
+        },
+        "description": {
+          "type": "string",
+          "description": "One sentence: what this component is and does."
+        },
+        "uses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Components this one is built from. Must reference keys in this registry. Empty for atoms.",
+          "examples": [["Button", "Icon"], ["HeroDateWidget", "Badge"]]
+        },
+        "anatomy": {
+          "type": "object",
+          "description": "The parts that make up this component. Keys are part names, values describe each part.",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/definitions/AnatomyPart" }
+        },
+        "variants": {
+          "type": "object",
+          "description": "Named variants of this component. Keys are variant names.",
+          "additionalProperties": { "$ref": "#/definitions/Variant" }
+        },
+        "states": {
+          "type": "object",
+          "description": "Interactive states. Keys: default, hover, pressed, focused, disabled, loading, error, etc.",
+          "additionalProperties": { "$ref": "#/definitions/State" }
+        },
+        "tokens": {
+          "type": "object",
+          "description": "Tier 3 component tokens. Override Tier 2 semantic tokens. Reference as {colors.semantic-name}.",
+          "additionalProperties": { "type": "string" }
+        },
+        "behavior": {
+          "type": "object",
+          "description": "Interactive behavior of this component.",
+          "additionalProperties": false,
+          "properties": {
+            "gestures": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["trigger", "action"],
+                "additionalProperties": false,
+                "properties": {
+                  "trigger": { "type": "string", "examples": ["tap", "long-press", "swipe-left", "swipe-right", "rotate", "pan"] },
+                  "action": { "type": "string" },
+                  "haptic": { "type": "string", "enum": ["none", "light", "medium", "heavy", "selection", "success", "warning", "error"] }
+                }
+              }
+            },
+            "animations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["trigger", "type", "duration"],
+                "additionalProperties": false,
+                "properties": {
+                  "trigger": { "type": "string" },
+                  "type": { "type": "string", "examples": ["fade", "slide-up", "slide-down", "scale", "spring", "custom"] },
+                  "duration": { "type": "string", "examples": ["200ms", "350ms", "500ms"] },
+                  "easing": { "type": "string", "examples": ["ease-out", "spring(0.8, 0.6)", "ease-in-out"] },
+                  "notes": { "type": "string" }
+                }
+              }
+            },
+            "accessibility": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": { "type": "string", "examples": ["button", "text", "image", "header", "list", "listitem"] },
+                "label": { "type": "string", "description": "Accessibility label. Use {prop} for dynamic values." },
+                "hint": { "type": "string" },
+                "focusable": { "type": "boolean" }
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Layout constraints for this component.",
+          "additionalProperties": false,
+          "properties": {
+            "min_width": { "type": "string" },
+            "max_width": { "type": "string" },
+            "min_height": { "type": "string" },
+            "max_height": { "type": "string" },
+            "aspect_ratio": { "type": "string", "examples": ["1:1", "16:9", "4:3"] },
+            "padding": { "type": "string", "description": "Internal padding. References DESIGN.md spacing tokens." },
+            "notes": { "type": "string" }
+          }
+        },
+        "ux_decisions": {
+          "type": "array",
+          "description": "UX decisions that shaped this component. Reference IDs from ux-spec.md.",
+          "items": { "type": "string" },
+          "examples": [["UX-01", "UX-03"]]
+        }
+      }
+    },
+    "AnatomyPart": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "What kind of element this part is.",
+          "examples": ["text", "icon", "image", "container", "shape", "gradient", "blur-layer", "component"]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this part is always present (true) or optional (false).",
+          "default": true
+        },
+        "token": {
+          "type": "string",
+          "description": "DESIGN.md Tier 2 or Tier 3 token applied to this part.",
+          "examples": ["{colors.text.primary}", "{typography.display.lg}", "{colors.accent}"]
+        },
+        "description": { "type": "string" },
+        "component_ref": {
+          "type": "string",
+          "description": "If type is 'component', which component from this registry."
+        }
+      }
+    },
+    "Variant": {
+      "type": "object",
+      "required": ["description"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "token_overrides": {
+          "type": "object",
+          "description": "Token overrides specific to this variant.",
+          "additionalProperties": { "type": "string" }
+        },
+        "anatomy_changes": {
+          "type": "object",
+          "description": "Parts that are added, removed, or changed in this variant.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "State": {
+      "type": "object",
+      "required": ["description"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "token_overrides": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}
