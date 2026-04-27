@@ -1,0 +1,6 @@
+{
+  "$schema": "https://design-harness.dev/schemas/components-registry.v1.json",
+  "version": "0.1.0",
+  "project": "{{PROJECT_NAME}}",
+  "components": {}
+}
